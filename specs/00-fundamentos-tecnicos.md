@@ -1,7 +1,8 @@
 # SPEC 00 — Fundamentos técnicos
 
-> **Estado:** En implementación
+> **Estado:** Implementada
 > **Fecha:** 2026-08-31
+> **Vigencia:** Vigente
 > **Objetivo:** Disponer de una aplicación de escritorio Windows que arranque de forma confiable, prepare su almacenamiento SQLite local mediante migraciones versionadas y valide automáticamente su base técnica antes de incorporar módulos de negocio.
 > **Depende de:** Ninguna
 > **Modifica:** Ninguna
@@ -224,22 +225,22 @@ Los nombres concretos de comandos y tipos internos pueden definirse durante la i
 
 ## Criterios de aceptación
 
-- [ ] **CA-01:** En un perfil de Windows sin base previa, la aplicación crea `inventory.db` dentro del directorio de datos resuelto por Tauri y alcanza el estado listo.
-- [ ] **CA-02:** La base se abre correctamente aunque la aplicación se inicie desde directorios de trabajo diferentes.
-- [ ] **CA-03:** Un segundo inicio reutiliza la misma base y no vuelve a ejecutar migraciones ya registradas.
-- [ ] **CA-04:** Las conexiones verificadas tienen claves foráneas habilitadas y la configuración acordada de espera y journal.
-- [ ] **CA-05:** Ningún componente React puede ejecutar SQL arbitrario ni necesita permisos de acceso directo a SQLite.
-- [ ] **CA-06:** Un fallo simulado de apertura de la base mantiene la ventana abierta y muestra un mensaje bloqueante en español con la acción `Reintentar`.
-- [ ] **CA-07:** Reintentar después de corregir un fallo recuperable lleva la aplicación al estado listo sin borrar ni reemplazar la base.
-- [ ] **CA-08:** Los fallos de directorio, conexión y migración llegan al frontend con los códigos definidos y sin trazas, SQL o rutas completas visibles.
-- [ ] **CA-09:** La interfaz ya no muestra logos, enlaces, saludo ni textos de demostración de Tauri, Vite o React.
-- [ ] **CA-10:** El shell diferencia visual y semánticamente los estados de carga, listo y error, y la acción de reintento puede operarse con teclado.
-- [ ] **CA-11:** Una compilación de producción no solicita recursos remotos y no conserva permisos Tauri externos sin uso.
-- [ ] **CA-12:** Las pruebas de persistencia crean bases temporales y dejan intacta la base ubicada en el directorio real de la aplicación.
-- [ ] **CA-13:** Existen comandos documentados que validan formato, análisis estático, pruebas y compilación de TypeScript y Rust desde un entorno limpio.
-- [ ] **CA-14:** Cada Pull Request ejecuta las validaciones acordadas en un runner Windows y falla si cualquiera de ellas no se completa.
-- [ ] **CA-15:** La aplicación Tauri para Windows compila sin requerir firma, publicación, servidor externo ni conexión funcional a Internet.
-- [ ] **CA-16:** `src-tauri/inventory.db` deja de estar versionado y el primer inicio no intenta importarlo ni copiarlo.
+- [x] **CA-01:** En un perfil de Windows sin base previa, la aplicación crea `inventory.db` dentro del directorio de datos resuelto por Tauri y alcanza el estado listo.
+- [x] **CA-02:** La base se abre correctamente aunque la aplicación se inicie desde directorios de trabajo diferentes.
+- [x] **CA-03:** Un segundo inicio reutiliza la misma base y no vuelve a ejecutar migraciones ya registradas.
+- [x] **CA-04:** Las conexiones verificadas tienen claves foráneas habilitadas y la configuración acordada de espera y journal.
+- [x] **CA-05:** Ningún componente React puede ejecutar SQL arbitrario ni necesita permisos de acceso directo a SQLite.
+- [x] **CA-06:** Un fallo simulado de apertura de la base mantiene la ventana abierta y muestra un mensaje bloqueante en español con la acción `Reintentar`.
+- [x] **CA-07:** Reintentar después de corregir un fallo recuperable lleva la aplicación al estado listo sin borrar ni reemplazar la base.
+- [x] **CA-08:** Los fallos de directorio, conexión y migración llegan al frontend con los códigos definidos y sin trazas, SQL o rutas completas visibles.
+- [x] **CA-09:** La interfaz ya no muestra logos, enlaces, saludo ni textos de demostración de Tauri, Vite o React.
+- [x] **CA-10:** El shell diferencia visual y semánticamente los estados de carga, listo y error, y la acción de reintento puede operarse con teclado.
+- [x] **CA-11:** Una compilación de producción no solicita recursos remotos y no conserva permisos Tauri externos sin uso.
+- [x] **CA-12:** Las pruebas de persistencia crean bases temporales y dejan intacta la base ubicada en el directorio real de la aplicación.
+- [x] **CA-13:** Existen comandos documentados que validan formato, análisis estático, pruebas y compilación de TypeScript y Rust desde un entorno limpio.
+- [x] **CA-14:** Cada Pull Request ejecuta las validaciones acordadas en un runner Windows y falla si cualquiera de ellas no se completa.
+- [x] **CA-15:** La aplicación Tauri para Windows compila sin requerir firma, publicación, servidor externo ni conexión funcional a Internet.
+- [x] **CA-16:** `src-tauri/inventory.db` deja de estar versionado y el primer inicio no intenta importarlo ni copiarlo.
 
 ## Riesgos
 
