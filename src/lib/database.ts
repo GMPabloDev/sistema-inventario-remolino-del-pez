@@ -17,7 +17,7 @@ export interface AppStatus {
   version: string;
 }
 
-function isAppError(value: unknown): value is AppError {
+export function isAppError(value: unknown): value is AppError {
   if (!value || typeof value !== "object") {
     return false;
   }

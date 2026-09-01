@@ -1,65 +1,107 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import { testDatabaseConnection } from "./lib/database";
+import { useCallback, useEffect, useState } from "react";
+
+import {
+  type AppError,
+  getAppStatus,
+  isAppError,
+  retryDatabase,
+} from "./lib/database";
 import "./App.css";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-  const [databaseStatus, setDatabaseStatus] = useState("");
+type ViewState = "loading" | "ready" | "error";
 
-  async function greet() {
-    setGreetMsg(await invoke("greet", { name }));
+function asAppError(error: unknown): AppError {
+  if (isAppError(error)) {
+    return error;
   }
 
-  async function checkDatabaseConnection() {
+  return {
+    code: "INTERNAL_ERROR",
+    message: "Ocurrió un error interno. Inténtalo nuevamente.",
+  };
+}
+
+function App() {
+  const [viewState, setViewState] = useState<ViewState>("loading");
+  const [version, setVersion] = useState("");
+  const [error, setError] = useState<AppError | null>(null);
+
+  const readStatus = useCallback(async () => {
+    setViewState("loading");
+    setError(null);
+
     try {
-      await testDatabaseConnection();
-      setDatabaseStatus("Conexión SQLite establecida correctamente.");
-    } catch (error) {
-      console.error(error);
-      setDatabaseStatus("No se pudo conectar con SQLite.");
+      const status = await getAppStatus();
+      setVersion(status.version);
+      setViewState("ready");
+    } catch (statusError: unknown) {
+      setError(asAppError(statusError));
+      setViewState("error");
     }
+  }, []);
+
+  const handleRetry = useCallback(async () => {
+    setViewState("loading");
+    setError(null);
+
+    try {
+      const status = await retryDatabase();
+      setVersion(status.version);
+      setViewState("ready");
+    } catch (retryError: unknown) {
+      setError(asAppError(retryError));
+      setViewState("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    void readStatus();
+  }, [readStatus]);
+
+  if (viewState === "loading") {
+    return (
+      <main className="app-shell" aria-busy="true" aria-live="polite">
+        <section className="status-card" aria-labelledby="loading-title">
+          <span className="status-mark status-mark--loading" aria-hidden="true">
+            …
+          </span>
+          <p className="eyebrow">Inventario Remolino del Pez</p>
+          <h1 id="loading-title">Preparando la aplicación</h1>
+          <p>Estamos preparando el almacenamiento local. Espera un momento.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (viewState === "error" && error) {
+    return (
+      <main className="app-shell" aria-live="assertive">
+        <section className="status-card status-card--error" role="alert" aria-labelledby="error-title">
+          <span className="status-mark status-mark--error" aria-hidden="true">
+            !
+          </span>
+          <p className="eyebrow">Inventario Remolino del Pez</p>
+          <h1 id="error-title">No se pudo iniciar la aplicación</h1>
+          <p>{error.message}</p>
+          <button type="button" onClick={() => void handleRetry()}>
+            Reintentar
+          </button>
+        </section>
+      </main>
+    );
   }
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank" rel="noreferrer">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-
-      <button type="button" onClick={checkDatabaseConnection}>
-        Probar conexión SQLite
-      </button>
-      <p>{databaseStatus}</p>
+    <main className="app-shell" aria-live="polite">
+      <section className="status-card" aria-labelledby="ready-title">
+        <span className="status-mark status-mark--ready" aria-hidden="true">
+          ✓
+        </span>
+        <p className="eyebrow">Inventario Remolino del Pez</p>
+        <h1 id="ready-title">Aplicación lista</h1>
+        <p>El almacenamiento local está preparado para los módulos del inventario.</p>
+        <p className="version">Versión {version}</p>
+      </section>
     </main>
   );
 }

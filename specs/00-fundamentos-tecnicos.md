@@ -201,13 +201,13 @@ Los nombres concretos de comandos y tipos internos pueden definirse durante la i
 
 ### Bloque 3 — Shell de escritorio offline
 
-- [ ] Retirar la interfaz y recursos de demostración que no pertenezcan al producto.
-- [ ] Construir el shell mínimo con nombre, versión y estados accesibles de carga, listo y error.
-- [ ] Añadir la acción de reintento y bloquear funciones dependientes de datos mientras la aplicación no esté lista.
-- [ ] Ajustar la ventana y los estilos base para una experiencia de escritorio Windows utilizable con teclado.
-- [ ] Restringir la política de contenido y las capacidades Tauri a recursos locales y permisos necesarios.
-- [ ] Retirar dependencias y permisos externos sin uso.
-- [ ] Probar los tres estados visibles y la acción de reintento en el frontend.
+- [x] Retirar la interfaz y recursos de demostración que no pertenezcan al producto.
+- [x] Construir el shell mínimo con nombre, versión y estados accesibles de carga, listo y error.
+- [x] Añadir la acción de reintento y bloquear funciones dependientes de datos mientras la aplicación no esté lista.
+- [x] Ajustar la ventana y los estilos base para una experiencia de escritorio Windows utilizable con teclado.
+- [x] Restringir la política de contenido y las capacidades Tauri a recursos locales y permisos necesarios.
+- [x] Retirar dependencias y permisos externos sin uso.
+- [x] Probar los tres estados visibles y la acción de reintento en el frontend.
 
 **Resultado verificable:** al abrir la aplicación se muestra el shell de Inventario Remolino del Pez; un fallo simulado de SQLite presenta un error recuperable y ninguna pantalla solicita recursos de Internet.
 
