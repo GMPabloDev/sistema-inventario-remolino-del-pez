@@ -9,7 +9,7 @@ use sea_orm::{
 };
 use sea_orm_migration::MigratorTrait;
 
-use crate::migration::Migrator;
+use crate::{errors::AppError, migration::Migrator};
 
 const MAX_CONNECTIONS: u32 = 5;
 const CONNECTION_TIMEOUT: Duration = Duration::from_secs(10);
@@ -17,19 +17,32 @@ const BUSY_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Creates the database directory, opens SQLite with the application defaults,
 /// and applies all pending migrations.
-pub async fn initialize_database(path: impl Into<PathBuf>) -> Result<DatabaseConnection, String> {
+pub async fn initialize_database(path: impl Into<PathBuf>) -> Result<DatabaseConnection, AppError> {
     let path = path.into();
-    let parent = path
-        .parent()
-        .ok_or_else(|| "database path has no parent directory".to_string())?;
+    let parent = path.parent().ok_or_else(|| {
+        AppError::new(
+            "APP_DATA_DIR_UNAVAILABLE",
+            "No se pudo preparar el directorio de datos de la aplicación.",
+            "database path has no parent directory",
+        )
+    })?;
 
-    std::fs::create_dir_all(parent)
-        .map_err(|error| format!("could not create database directory: {error}"))?;
+    std::fs::create_dir_all(parent).map_err(|error| {
+        AppError::new(
+            "APP_DATA_DIR_UNAVAILABLE",
+            "No se pudo preparar el directorio de datos de la aplicación.",
+            format!("could not create database directory: {error}"),
+        )
+    })?;
 
     let database = connect(&path).await?;
-    Migrator::up(&database, None)
-        .await
-        .map_err(|error| format!("could not apply database migrations: {error}"))?;
+    Migrator::up(&database, None).await.map_err(|error| {
+        AppError::new(
+            "DATABASE_MIGRATION_FAILED",
+            "No se pudieron aplicar las actualizaciones de la base de datos.",
+            format!("could not apply database migrations: {error}"),
+        )
+    })?;
 
     Ok(database)
 }
@@ -53,10 +66,16 @@ fn connection_options(path: &Path) -> ConnectOptions {
     options
 }
 
-async fn connect(path: &Path) -> Result<DatabaseConnection, String> {
+async fn connect(path: &Path) -> Result<DatabaseConnection, AppError> {
     Database::connect(connection_options(path))
         .await
-        .map_err(|error| format!("could not open SQLite database: {error}"))
+        .map_err(|error| {
+            AppError::new(
+                "DATABASE_UNAVAILABLE",
+                "La base de datos no está disponible.",
+                format!("could not open SQLite database: {error}"),
+            )
+        })
 }
 
 #[cfg(test)]

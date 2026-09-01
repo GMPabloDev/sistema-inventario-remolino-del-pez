@@ -190,12 +190,12 @@ Los nombres concretos de comandos y tipos internos pueden definirse durante la i
 
 ### Bloque 2 — Contratos y observabilidad
 
-- [ ] Definir el tipo serializable común de errores y la conversión controlada de fallos de rutas, SQLite y migraciones.
-- [ ] Exponer al frontend el estado de preparación y la versión de la aplicación.
-- [ ] Exponer una operación de reintento que no elimine ni reemplace el archivo existente.
-- [ ] Centralizar las invocaciones Tauri del frontend para conservar tipos y tratamiento uniforme de errores.
-- [ ] Incorporar registro técnico local con niveles, contexto y filtrado de información sensible.
-- [ ] Cubrir con pruebas los contratos satisfactorios, los códigos de error y el reintento.
+- [x] Definir el tipo serializable común de errores y la conversión controlada de fallos de rutas, SQLite y migraciones.
+- [x] Exponer al frontend el estado de preparación y la versión de la aplicación.
+- [x] Exponer una operación de reintento que no elimine ni reemplace el archivo existente.
+- [x] Centralizar las invocaciones Tauri del frontend para conservar tipos y tratamiento uniforme de errores.
+- [x] Incorporar registro técnico local con niveles, contexto y filtrado de información sensible.
+- [x] Cubrir con pruebas los contratos satisfactorios, los códigos de error y el reintento.
 
 **Resultado verificable:** el frontend puede determinar de manera tipada si la aplicación está lista y puede reintentar un fallo usando códigos estables, sin recibir errores internos sin procesar.
 
