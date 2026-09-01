@@ -1,6 +1,6 @@
 # SPEC 00 — Fundamentos técnicos
 
-> **Estado:** Aprobada
+> **Estado:** En implementación
 > **Fecha:** 2026-08-31
 > **Objetivo:** Disponer de una aplicación de escritorio Windows que arranque de forma confiable, prepare su almacenamiento SQLite local mediante migraciones versionadas y valide automáticamente su base técnica antes de incorporar módulos de negocio.
 > **Depende de:** Ninguna
@@ -179,12 +179,12 @@ Los nombres concretos de comandos y tipos internos pueden definirse durante la i
 
 ### Bloque 1 — Persistencia y migraciones
 
-- [ ] Sustituir la ruta relativa por la ruta del directorio de datos resuelta mediante Tauri y crear el directorio cuando falte.
-- [ ] Incorporar el ejecutor de migraciones versionadas compatible con SeaORM y una migración inicial sin entidades de negocio.
-- [ ] Aplicar de forma uniforme la configuración de integridad referencial, journal y espera ante bloqueos.
-- [ ] Separar la inicialización de la construcción del proceso para poder conservar la ventana y reintentar después de fallos recuperables.
-- [ ] Retirar la base vacía del control de versiones e impedir que nuevas bases locales sean añadidas accidentalmente.
-- [ ] Añadir pruebas backend con bases temporales para creación inicial, reapertura, idempotencia de migraciones y fallos controlados.
+- [x] Sustituir la ruta relativa por la ruta del directorio de datos resuelta mediante Tauri y crear el directorio cuando falte.
+- [x] Incorporar el ejecutor de migraciones versionadas compatible con SeaORM y una migración inicial sin entidades de negocio.
+- [x] Aplicar de forma uniforme la configuración de integridad referencial, journal y espera ante bloqueos.
+- [x] Separar la inicialización de la construcción del proceso para poder conservar la ventana y reintentar después de fallos recuperables.
+- [x] Retirar la base vacía del control de versiones e impedir que nuevas bases locales sean añadidas accidentalmente.
+- [x] Añadir pruebas backend con bases temporales para creación inicial, reapertura, idempotencia de migraciones y fallos controlados.
 
 **Resultado verificable:** una instalación sin base crea y prepara `inventory.db` en el directorio de datos; reiniciarla conserva la misma base y no repite migraciones.
 
