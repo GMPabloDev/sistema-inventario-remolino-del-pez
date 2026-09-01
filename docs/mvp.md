@@ -1,4 +1,3 @@
-
 # Sistema de Control de Inventario para Restaurante — MVP
 
 ## 1. Definición del MVP

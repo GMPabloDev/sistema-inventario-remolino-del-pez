@@ -100,15 +100,15 @@ Esta SPEC establece la infraestructura común sobre la que dependerán autentica
 
 ### Ubicación persistente
 
-| Elemento | Contrato |
-|---|---|
-| Plataforma del MVP | Windows de escritorio |
-| Topología | Un PC, una instalación y una base local |
-| Directorio | Directorio de datos de aplicación resuelto por Tauri |
-| Identificador | `com.remolinodelpez.inventario` |
-| Archivo | `inventory.db` dentro del directorio de datos |
-| Propietario del acceso | Backend Rust mediante SeaORM |
-| Acceso frontend | Exclusivamente comandos Tauri |
+| Elemento               | Contrato                                             |
+| ---------------------- | ---------------------------------------------------- |
+| Plataforma del MVP     | Windows de escritorio                                |
+| Topología              | Un PC, una instalación y una base local              |
+| Directorio             | Directorio de datos de aplicación resuelto por Tauri |
+| Identificador          | `com.remolinodelpez.inventario`                      |
+| Archivo                | `inventory.db` dentro del directorio de datos        |
+| Propietario del acceso | Backend Rust mediante SeaORM                         |
+| Acceso frontend        | Exclusivamente comandos Tauri                        |
 
 La ubicación física concreta puede variar entre versiones de Windows y perfiles de usuario; por ello no se codifica una ruta absoluta. Dos cuentas distintas de Windows tendrán directorios y bases independientes.
 
@@ -116,30 +116,30 @@ La ubicación física concreta puede variar entre versiones de Windows y perfile
 
 El frontend debe poder distinguir, como mínimo, estos estados:
 
-| Estado | Significado | Acción permitida |
-|---|---|---|
-| `loading` | Se está consultando o preparando el almacenamiento | Esperar |
-| `ready` | La conexión y las migraciones finalizaron | Continuar al shell |
-| `error` | La inicialización no pudo completarse | Reintentar |
+| Estado    | Significado                                        | Acción permitida   |
+| --------- | -------------------------------------------------- | ------------------ |
+| `loading` | Se está consultando o preparando el almacenamiento | Esperar            |
+| `ready`   | La conexión y las migraciones finalizaron          | Continuar al shell |
+| `error`   | La inicialización no pudo completarse              | Reintentar         |
 
 La respuesta satisfactoria del estado incluye la versión de la aplicación. El estado de error utiliza el contrato común de errores y no expone información interna de la máquina.
 
 ### Contrato común de error
 
-| Campo | Tipo | Requerido | Regla |
-|---|---|---:|---|
-| `code` | string | Sí | Identificador estable en `SCREAMING_SNAKE_CASE` |
-| `message` | string | Sí | Mensaje seguro y comprensible en español |
-| `details` | objeto | No | Solo información estructurada segura para orientar una corrección |
+| Campo     | Tipo   | Requerido | Regla                                                             |
+| --------- | ------ | --------: | ----------------------------------------------------------------- |
+| `code`    | string |        Sí | Identificador estable en `SCREAMING_SNAKE_CASE`                   |
+| `message` | string |        Sí | Mensaje seguro y comprensible en español                          |
+| `details` | objeto |        No | Solo información estructurada segura para orientar una corrección |
 
 Códigos mínimos de esta SPEC:
 
-| Código | Situación |
-|---|---|
-| `APP_DATA_DIR_UNAVAILABLE` | No se pudo determinar o preparar el directorio de datos |
-| `DATABASE_UNAVAILABLE` | No se pudo abrir o comprobar la base |
-| `DATABASE_MIGRATION_FAILED` | Una migración no pudo completarse |
-| `INTERNAL_ERROR` | Fallo inesperado sin un código más específico |
+| Código                      | Situación                                               |
+| --------------------------- | ------------------------------------------------------- |
+| `APP_DATA_DIR_UNAVAILABLE`  | No se pudo determinar o preparar el directorio de datos |
+| `DATABASE_UNAVAILABLE`      | No se pudo abrir o comprobar la base                    |
+| `DATABASE_MIGRATION_FAILED` | Una migración no pudo completarse                       |
+| `INTERNAL_ERROR`            | Fallo inesperado sin un código más específico           |
 
 Los nombres concretos de comandos y tipos internos pueden definirse durante la implementación, pero deben respetar estos estados, campos y códigos observables.
 
@@ -244,10 +244,10 @@ Los nombres concretos de comandos y tipos internos pueden definirse durante la i
 
 ## Riesgos
 
-| Riesgo | Mitigación |
-|---|---|
+| Riesgo                                                                                                | Mitigación                                                                                                                    |
+| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Una ruta por perfil de Windows genere bases distintas si se usan varias cuentas del sistema operativo | Documentar que el MVP opera bajo una sola cuenta de Windows y mostrar posteriormente la ubicación de datos en soporte técnico |
-| Una migración fallida impida iniciar los módulos futuros | Migraciones versionadas, transacciones cuando sean compatibles, registro local y reintento no destructivo |
-| Un bloqueo temporal de SQLite se confunda con corrupción | Configurar espera acotada, distinguir códigos de error y no eliminar la base automáticamente |
-| Diferencias entre desarrollo con Vite y producción empaquetada oculten permisos de red | Mantener excepciones locales solo en desarrollo y validar en CI una compilación Tauri de producción |
-| Los logs expongan datos del inventario en futuras funcionalidades | Centralizar el registro, excluir datos sensibles por defecto y revisar cada nuevo contexto registrado |
+| Una migración fallida impida iniciar los módulos futuros                                              | Migraciones versionadas, transacciones cuando sean compatibles, registro local y reintento no destructivo                     |
+| Un bloqueo temporal de SQLite se confunda con corrupción                                              | Configurar espera acotada, distinguir códigos de error y no eliminar la base automáticamente                                  |
+| Diferencias entre desarrollo con Vite y producción empaquetada oculten permisos de red                | Mantener excepciones locales solo en desarrollo y validar en CI una compilación Tauri de producción                           |
+| Los logs expongan datos del inventario en futuras funcionalidades                                     | Centralizar el registro, excluir datos sensibles por defecto y revisar cada nuevo contexto registrado                         |
