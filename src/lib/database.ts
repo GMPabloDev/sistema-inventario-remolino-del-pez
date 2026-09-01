@@ -1,15 +1,5 @@
-import Database from "@tauri-apps/plugin-sql";
+import { invoke } from "@tauri-apps/api/core";
 
-const databasePath = "sqlite:inventory.db";
-
-let databasePromise: Promise<Database> | undefined;
-
-export function getDatabase(): Promise<Database> {
-  databasePromise ??= Database.load(databasePath);
-  return databasePromise;
-}
-
-export async function testDatabaseConnection(): Promise<void> {
-  const database = await getDatabase();
-  await database.select<{ value: number }>("SELECT 1 AS value");
+export function testDatabaseConnection(): Promise<void> {
+  return invoke("test_database_connection");
 }
