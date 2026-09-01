@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validar aplicación Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Configurar Rust
+        uses: dtolnay/rust-toolchain@1.98.0
+        with:
+          components: rustfmt, clippy
+
+      - name: Instalar dependencias JavaScript
+        run: npm ci
+
+      - name: Verificar formato frontend
+        run: npm run format:check
+
+      - name: Verificar tipos frontend
+        run: npm run typecheck
+
+      - name: Ejecutar tests frontend
+        run: npm test
+
+      - name: Compilar frontend
+        run: npm run build
+
+      - name: Verificar formato Rust
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+
+      - name: Ejecutar análisis estático Rust
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+      - name: Ejecutar tests Rust
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Validar backend Rust
+        run: cargo check --manifest-path src-tauri/Cargo.toml
+
+      - name: Compilar aplicación Tauri para Windows
+        run: npm run tauri build -- --debug

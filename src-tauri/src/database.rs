@@ -82,12 +82,26 @@ async fn connect(path: &Path) -> Result<DatabaseConnection, AppError> {
 mod tests {
     use std::{
         fs,
-        time::{SystemTime, UNIX_EPOCH},
+        time::{Duration, SystemTime, UNIX_EPOCH},
     };
 
     use sea_orm::{ConnectionTrait, DbBackend, Statement};
 
     use super::initialize_database;
+
+    fn remove_temporary_directory(directory: std::path::PathBuf) {
+        let mut last_error = None;
+        for _ in 0..20 {
+            match fs::remove_dir_all(&directory) {
+                Ok(()) => return,
+                Err(error) => {
+                    last_error = Some(error);
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+            }
+        }
+        panic!("temporary database directory should be removable: {last_error:?}");
+    }
 
     fn temporary_database_path(label: &str) -> (std::path::PathBuf, std::path::PathBuf) {
         let suffix = SystemTime::now()
@@ -152,7 +166,7 @@ mod tests {
         assert!(migration_table_exists);
         assert_eq!(foreign_keys_enabled, 1);
         assert_eq!(journal_mode.to_ascii_lowercase(), "delete");
-        fs::remove_dir_all(directory).expect("temporary database directory should be removable");
+        remove_temporary_directory(directory);
     }
 
     #[tokio::test]
@@ -185,7 +199,7 @@ mod tests {
         drop(second);
 
         assert_eq!(count, 1);
-        fs::remove_dir_all(directory).expect("temporary database directory should be removable");
+        remove_temporary_directory(directory);
     }
 
     #[tokio::test]
@@ -198,6 +212,6 @@ mod tests {
 
         assert!(result.is_err());
         assert!(path.is_dir());
-        fs::remove_dir_all(directory).expect("temporary database directory should be removable");
+        remove_temporary_directory(directory);
     }
 }

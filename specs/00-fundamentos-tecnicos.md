@@ -213,12 +213,12 @@ Los nombres concretos de comandos y tipos internos pueden definirse durante la i
 
 ### Bloque 4 — Herramientas y validación continua
 
-- [ ] Configurar un ejecutor de pruebas frontend compatible con React y TypeScript, incluyendo pruebas de componentes.
-- [ ] Añadir comandos únicos y documentados para formato, análisis estático, pruebas y compilación del frontend y de Rust.
-- [ ] Configurar formato y análisis estricto para Rust y mantener la comprobación estricta existente de TypeScript.
-- [ ] Crear un flujo de CI para Pull Requests sobre Windows con instalación reproducible de Node.js y Rust.
-- [ ] Ejecutar en CI las pruebas frontend/backend, formato, análisis estático, compilación web y validación de la aplicación Tauri.
-- [ ] Documentar requisitos, inicio en desarrollo, ejecución de pruebas, compilación y ubicación lógica de datos.
+- [x] Configurar un ejecutor de pruebas frontend compatible con React y TypeScript, incluyendo pruebas de componentes.
+- [x] Añadir comandos únicos y documentados para formato, análisis estático, pruebas y compilación del frontend y de Rust.
+- [x] Configurar formato y análisis estricto para Rust y mantener la comprobación estricta existente de TypeScript.
+- [x] Crear un flujo de CI para Pull Requests sobre Windows con instalación reproducible de Node.js y Rust.
+- [x] Ejecutar en CI las pruebas frontend/backend, formato, análisis estático, compilación web y validación de la aplicación Tauri.
+- [x] Documentar requisitos, inicio en desarrollo, ejecución de pruebas, compilación y ubicación lógica de datos.
 
 **Resultado verificable:** un Pull Request limpio obtiene todas las validaciones exitosas y un fallo intencional de formato, tipos o pruebas hace fallar el control correspondiente.
 

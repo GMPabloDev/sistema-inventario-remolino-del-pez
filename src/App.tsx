@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 
-import {
-  type AppError,
-  getAppStatus,
-  isAppError,
-  retryDatabase,
-} from "./lib/database";
+import { type AppError, getAppStatus, isAppError, retryDatabase } from "./lib/database";
 import "./App.css";
 
 type ViewState = "loading" | "ready" | "error";
@@ -76,7 +71,11 @@ function App() {
   if (viewState === "error" && error) {
     return (
       <main className="app-shell" aria-live="assertive">
-        <section className="status-card status-card--error" role="alert" aria-labelledby="error-title">
+        <section
+          className="status-card status-card--error"
+          role="alert"
+          aria-labelledby="error-title"
+        >
           <span className="status-mark status-mark--error" aria-hidden="true">
             !
           </span>
