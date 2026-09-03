@@ -1,6 +1,7 @@
 # SPEC 01 — Autenticación, usuarios y roles
 
-> **Estado:** Aprobada
+> **Estado:** Implementada
+> **Vigencia:** Vigente
 > **Fecha:** 2026-09-02
 > **Objetivo:** Permitir que los usuarios autorizados inicien y cierren sesión de forma local, que un administrador gestione cuentas y que cada comando protegido aplique los roles `ADMIN` y `WAREHOUSE_MANAGER`.
 > **Depende de:** [SPEC 00 — Fundamentos técnicos](00-fundamentos-tecnicos.md)
@@ -301,28 +302,28 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 
 ## Criterios de aceptación
 
-- [ ] **CA-01:** Una base migrada sin usuarios crea exactamente un `ADMIN` activo con UUID, usuario `admin` y contraseña temporal aleatoria de al menos 20 caracteres.
-- [ ] **CA-02:** La contraseña temporal inicial se muestra sin persistirse en texto plano y, si no se completa el cambio antes de cerrar, el siguiente inicio entrega una nueva e invalida la anterior.
-- [ ] **CA-03:** Una sesión con contraseña temporal solo permite consultar la identidad, cambiar la contraseña o cerrar sesión.
-- [ ] **CA-04:** Un nombre de usuario inexistente, una contraseña incorrecta y una cuenta inactiva muestran el mismo error de credenciales inválidas.
-- [ ] **CA-05:** A partir del cuarto fallo consecutivo para un identificador, el backend aplica la espera progresiva definida, con máximo de 30 segundos, y un login correcto reinicia el contador.
-- [ ] **CA-06:** Una contraseña definitiva menor de 12 o mayor de 128 caracteres se rechaza; una válida se almacena únicamente como hash Argon2id con sal aleatoria.
-- [ ] **CA-07:** Un login válido crea una sesión cuyo secreto no llega a React ni se guarda en `localStorage`, archivos de configuración o SQLite en texto plano.
-- [ ] **CA-08:** Una sesión recordada válida restaura la identidad después de reiniciar la aplicación y vence exactamente siete días después de su creación.
-- [ ] **CA-09:** Logout, cambio o restablecimiento de contraseña, cambio de rol y desactivación impiden reutilizar inmediatamente cualquier sesión anterior del usuario afectado.
-- [ ] **CA-10:** Si Windows no permite guardar el secreto de sesión de forma segura, el login funciona solo para el proceso actual, informa la limitación y no crea un fallback inseguro.
-- [ ] **CA-11:** Un `ADMIN` puede crear un usuario con cualquiera de los dos roles y recibe una contraseña temporal visible una sola vez.
-- [ ] **CA-12:** Nombres como `Manager`, `manager` y `MANAGER` se consideran el mismo usuario para la restricción de unicidad.
-- [ ] **CA-13:** Un `ADMIN` puede listar y editar otras cuentas, restablecer sus contraseñas y activarlas o desactivarlas.
-- [ ] **CA-14:** Ningún usuario puede cambiar desde la administración su propio rol, nombre de acceso o estado.
-- [ ] **CA-15:** Ninguna operación puede desactivar o degradar al último `ADMIN` activo, incluso ante solicitudes concurrentes.
-- [ ] **CA-16:** Un usuario desactivado conserva su registro y UUID, no puede iniciar sesión y no recupera sesiones anteriores al reactivarse.
-- [ ] **CA-17:** `WAREHOUSE_MANAGER`, una sesión temporal y una invocación sin sesión reciben un error estable al ejecutar cualquier comando de gestión de usuarios.
-- [ ] **CA-18:** Ocultar o modificar controles en React no permite eludir la autorización aplicada por Rust.
-- [ ] **CA-19:** El inicio de la aplicación diferencia preparación de base, autenticación, bootstrap, login, cambio obligatorio y shell autenticado sin mostrar brevemente contenido protegido.
-- [ ] **CA-20:** La interfaz limpia la contraseña después de un login fallido y no vuelve a mostrar una credencial temporal después de abandonar su vista de entrega.
-- [ ] **CA-21:** Los errores, las respuestas serializadas posteriores a la entrega y los logs no contienen contraseñas, hashes, secretos de sesión ni credenciales temporales. La única excepción permitida es el campo `temporaryPassword` en la respuesta inmediata y única de bootstrap, creación o restablecimiento; React debe eliminarlo al abandonar la vista y nunca persistirlo en almacenamiento web, archivos, SQLite ni logs.
-- [ ] **CA-22:** Las pruebas usan bases y credenciales aisladas, y todas las validaciones de SPEC 00 continúan pasando en Windows.
+- [x] **CA-01:** Una base migrada sin usuarios crea exactamente un `ADMIN` activo con UUID, usuario `admin` y contraseña temporal aleatoria de al menos 20 caracteres.
+- [x] **CA-02:** La contraseña temporal inicial se muestra sin persistirse en texto plano y, si no se completa el cambio antes de cerrar, el siguiente inicio entrega una nueva e invalida la anterior.
+- [x] **CA-03:** Una sesión con contraseña temporal solo permite consultar la identidad, cambiar la contraseña o cerrar sesión.
+- [x] **CA-04:** Un nombre de usuario inexistente, una contraseña incorrecta y una cuenta inactiva muestran el mismo error de credenciales inválidas.
+- [x] **CA-05:** A partir del cuarto fallo consecutivo para un identificador, el backend aplica la espera progresiva definida, con máximo de 30 segundos, y un login correcto reinicia el contador.
+- [x] **CA-06:** Una contraseña definitiva menor de 12 o mayor de 128 caracteres se rechaza; una válida se almacena únicamente como hash Argon2id con sal aleatoria.
+- [x] **CA-07:** Un login válido crea una sesión cuyo secreto no llega a React ni se guarda en `localStorage`, archivos de configuración o SQLite en texto plano.
+- [x] **CA-08:** Una sesión recordada válida restaura la identidad después de reiniciar la aplicación y vence exactamente siete días después de su creación.
+- [x] **CA-09:** Logout, cambio o restablecimiento de contraseña, cambio de rol y desactivación impiden reutilizar inmediatamente cualquier sesión anterior del usuario afectado.
+- [x] **CA-10:** Si Windows no permite guardar el secreto de sesión de forma segura, el login funciona solo para el proceso actual, informa la limitación y no crea un fallback inseguro.
+- [x] **CA-11:** Un `ADMIN` puede crear un usuario con cualquiera de los dos roles y recibe una contraseña temporal visible una sola vez.
+- [x] **CA-12:** Nombres como `Manager`, `manager` y `MANAGER` se consideran el mismo usuario para la restricción de unicidad.
+- [x] **CA-13:** Un `ADMIN` puede listar y editar otras cuentas, restablecer sus contraseñas y activarlas o desactivarlas.
+- [x] **CA-14:** Ningún usuario puede cambiar desde la administración su propio rol, nombre de acceso o estado.
+- [x] **CA-15:** Ninguna operación puede desactivar o degradar al último `ADMIN` activo, incluso ante solicitudes concurrentes.
+- [x] **CA-16:** Un usuario desactivado conserva su registro y UUID, no puede iniciar sesión y no recupera sesiones anteriores al reactivarse.
+- [x] **CA-17:** `WAREHOUSE_MANAGER`, una sesión temporal y una invocación sin sesión reciben un error estable al ejecutar cualquier comando de gestión de usuarios.
+- [x] **CA-18:** Ocultar o modificar controles en React no permite eludir la autorización aplicada por Rust.
+- [x] **CA-19:** El inicio de la aplicación diferencia preparación de base, autenticación, bootstrap, login, cambio obligatorio y shell autenticado sin mostrar brevemente contenido protegido.
+- [x] **CA-20:** La interfaz limpia la contraseña después de un login fallido y no vuelve a mostrar una credencial temporal después de abandonar su vista de entrega.
+- [x] **CA-21:** Los errores, las respuestas serializadas posteriores a la entrega y los logs no contienen contraseñas, hashes, secretos de sesión ni credenciales temporales. La única excepción permitida es el campo `temporaryPassword` en la respuesta inmediata y única de bootstrap, creación o restablecimiento; React debe eliminarlo al abandonar la vista y nunca persistirlo en almacenamiento web, archivos, SQLite ni logs.
+- [x] **CA-22:** Las pruebas usan bases y credenciales aisladas, y todas las validaciones de SPEC 00 continúan pasando en Windows.
 
 ## Riesgos
 
