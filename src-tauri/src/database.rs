@@ -85,7 +85,7 @@ mod tests {
         time::{Duration, SystemTime, UNIX_EPOCH},
     };
 
-    use sea_orm::{ConnectionTrait, DbBackend, Statement};
+    use sea_orm::{ConnectionTrait, DbBackend, Statement, TransactionTrait};
 
     use super::initialize_database;
 
@@ -134,7 +134,7 @@ mod tests {
             .await
             .expect("migration query should succeed")
             .is_some();
-        let foreign_keys = database
+        let foreign_keys_result = database
             .query_one(Statement::from_string(
                 DbBackend::Sqlite,
                 "PRAGMA foreign_keys",
@@ -142,10 +142,10 @@ mod tests {
             .await
             .expect("foreign keys pragma should succeed")
             .expect("foreign keys pragma should return a value");
-        let foreign_keys_enabled: i64 = foreign_keys
+        let foreign_keys_enabled: i64 = foreign_keys_result
             .try_get_by_index(0)
             .expect("foreign keys pragma should be an integer");
-        let journal_mode = database
+        let journal_mode_result = database
             .query_one(Statement::from_string(
                 DbBackend::Sqlite,
                 "PRAGMA journal_mode",
@@ -153,14 +153,12 @@ mod tests {
             .await
             .expect("journal mode pragma should succeed")
             .expect("journal mode pragma should return a value");
-        let journal_mode: String = journal_mode
+        let journal_mode: String = journal_mode_result
             .try_get_by_index(0)
             .expect("journal mode pragma should be text");
-        database
-            .close_by_ref()
-            .await
-            .expect("database should close");
-        drop(database);
+        drop(foreign_keys_result);
+        drop(journal_mode_result);
+        database.close().await.expect("database should close");
 
         assert!(file_exists);
         assert!(migration_table_exists);
@@ -192,13 +190,74 @@ mod tests {
             .try_get_by_index(0)
             .expect("count should be an integer");
         drop(migration_count);
-        second
-            .close_by_ref()
-            .await
-            .expect("second database should close");
-        drop(second);
+        second.close().await.expect("second database should close");
 
-        assert_eq!(count, 1);
+        assert_eq!(count, 2);
+        remove_temporary_directory(directory);
+    }
+
+    #[tokio::test]
+    async fn auth_migration_enforces_roles_and_case_insensitive_usernames() {
+        let (directory, path) = temporary_database_path("auth-schema");
+        let database = initialize_database(&path)
+            .await
+            .expect("database should initialize");
+
+        database
+            .execute(Statement::from_string(
+                DbBackend::Sqlite,
+                "INSERT INTO users (id, username, display_name, password_hash, role) VALUES ('1', 'manager', 'Manager', 'hash', 'WAREHOUSE_MANAGER')",
+            ))
+            .await
+            .expect("valid user should insert");
+        assert!(database
+            .execute(Statement::from_string(
+                DbBackend::Sqlite,
+                "INSERT INTO users (id, username, display_name, password_hash, role) VALUES ('2', 'MANAGER', 'Other', 'hash', 'ADMIN')",
+            ))
+            .await
+            .is_err());
+        assert!(database
+            .execute(Statement::from_string(
+                DbBackend::Sqlite,
+                "INSERT INTO users (id, username, display_name, password_hash, role) VALUES ('3', 'admin', 'Admin', 'hash', 'INVALID')",
+            ))
+            .await
+            .is_err());
+
+        database.close().await.expect("database should close");
+        remove_temporary_directory(directory);
+    }
+
+    #[tokio::test]
+    async fn protects_the_last_admin_inside_a_transaction() {
+        let (directory, path) = temporary_database_path("last-admin");
+        let database = initialize_database(&path)
+            .await
+            .expect("database should initialize");
+        database
+            .execute(Statement::from_string(
+                DbBackend::Sqlite,
+                "INSERT INTO users (id, username, display_name, password_hash, role) VALUES ('admin-id', 'admin', 'Admin', 'hash', 'ADMIN')",
+            ))
+            .await
+            .expect("admin should insert");
+
+        let transaction = database.begin().await.expect("transaction should begin");
+        let error = crate::auth::ensure_active_admin_remains_in_transaction(
+            &transaction,
+            "admin-id",
+            crate::auth::UserRole::WarehouseManager,
+            true,
+        )
+        .await
+        .expect_err("demoting the last admin should fail");
+        assert_eq!(error.code, "LAST_ACTIVE_ADMIN_REQUIRED");
+        transaction
+            .rollback()
+            .await
+            .expect("transaction should roll back");
+        database.close().await.expect("database should close");
         remove_temporary_directory(directory);
     }
 

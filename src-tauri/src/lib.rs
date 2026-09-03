@@ -1,3 +1,4 @@
+pub mod auth;
 mod database;
 mod errors;
 mod logging;

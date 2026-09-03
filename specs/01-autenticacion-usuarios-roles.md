@@ -1,6 +1,6 @@
 # SPEC 01 — Autenticación, usuarios y roles
 
-> **Estado:** Aprobada
+> **Estado:** En implementación
 > **Fecha:** 2026-09-02
 > **Objetivo:** Permitir que los usuarios autorizados inicien y cierren sesión de forma local, que un administrador gestione cuentas y que cada comando protegido aplique los roles `ADMIN` y `WAREHOUSE_MANAGER`.
 > **Depende de:** [SPEC 00 — Fundamentos técnicos](00-fundamentos-tecnicos.md)
@@ -248,11 +248,11 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 
 ### Bloque 1 — Dominio, migración y primitivas de seguridad
 
-- [ ] Incorporar las entidades de usuario y sesión con sus restricciones, índices y una migración posterior a la inicial.
-- [ ] Implementar normalización de nombres de usuario, validaciones y protección transaccional del último administrador.
-- [ ] Incorporar generación criptográfica de UUID, contraseñas temporales y secretos de sesión.
-- [ ] Centralizar hashing y verificación Argon2id con parámetros versionados y límites de entrada.
-- [ ] Cubrir migración, restricciones, reapertura y operaciones concurrentes mediante bases temporales.
+- [x] Incorporar las entidades de usuario y sesión con sus restricciones, índices y una migración posterior a la inicial.
+- [x] Implementar normalización de nombres de usuario, validaciones y protección transaccional del último administrador.
+- [x] Incorporar generación criptográfica de UUID, contraseñas temporales y secretos de sesión.
+- [x] Centralizar hashing y verificación Argon2id con parámetros versionados y límites de entrada.
+- [x] Cubrir migración, restricciones, reapertura y operaciones concurrentes mediante bases temporales.
 
 **Resultado verificable:** una base existente migra sin perder datos, persiste usuarios y sesiones válidos y rechaza duplicados, roles inválidos o la pérdida del último administrador.
 
