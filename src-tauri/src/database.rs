@@ -91,7 +91,7 @@ mod tests {
 
     fn remove_temporary_directory(directory: std::path::PathBuf) {
         let mut last_error = None;
-        for _ in 0..20 {
+        for _ in 0..100 {
             match fs::remove_dir_all(&directory) {
                 Ok(()) => return,
                 Err(error) => {
@@ -158,7 +158,11 @@ mod tests {
             .expect("journal mode pragma should be text");
         drop(foreign_keys_result);
         drop(journal_mode_result);
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
 
         assert!(file_exists);
         assert!(migration_table_exists);
@@ -190,7 +194,11 @@ mod tests {
             .try_get_by_index(0)
             .expect("count should be an integer");
         drop(migration_count);
-        second.close().await.expect("second database should close");
+        second
+            .close_by_ref()
+            .await
+            .expect("second database should close");
+        drop(second);
 
         assert_eq!(count, 2);
         remove_temporary_directory(directory);

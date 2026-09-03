@@ -51,6 +51,21 @@ export interface AuthResult {
   persistenceWarning: boolean;
 }
 
+export interface AdminUser {
+  id: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AdminMutationResult {
+  user: AdminUser;
+  temporaryPassword: string | null;
+}
+
 export function isAppError(value: unknown): value is AppError {
   if (!value || typeof value !== "object") {
     return false;
@@ -106,4 +121,39 @@ export function logout(): Promise<void> {
 
 export function getIdentity(): Promise<UserIdentity> {
   return invokeApp<UserIdentity>("get_identity");
+}
+
+export function listUsers(): Promise<AdminUser[]> {
+  return invokeApp<AdminUser[]>("list_users");
+}
+
+export function createUser(
+  username: string,
+  displayName: string,
+  role: UserRole,
+): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("create_user", {
+    request: { username, displayName, role },
+  });
+}
+
+export function updateUser(
+  id: string,
+  username: string,
+  displayName: string,
+  role: UserRole,
+): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("update_user", {
+    request: { id, username, displayName, role },
+  });
+}
+
+export function setUserActive(id: string, active: boolean): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("set_user_active", {
+    request: { id, active },
+  });
+}
+
+export function resetUserPassword(id: string): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("reset_user_password", { request: { id } });
 }

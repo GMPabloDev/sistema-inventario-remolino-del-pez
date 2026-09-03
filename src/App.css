@@ -128,7 +128,8 @@ h1 {
   font-weight: 700;
 }
 
-.auth-form input {
+.auth-form input,
+.auth-form select {
   width: 100%;
   border: 1px solid #b9cbc5;
   border-radius: 0.5rem;
@@ -138,7 +139,8 @@ h1 {
   font: inherit;
 }
 
-.auth-form input:focus-visible {
+.auth-form input:focus-visible,
+.auth-form select:focus-visible {
   outline: 3px solid #f0b429;
   outline-offset: 2px;
 }
@@ -173,6 +175,44 @@ h1 {
 .form-error {
   color: #8b2e2e;
   background: #fbe3e3;
+}
+
+.user-management {
+  width: min(100%, 52rem);
+}
+
+.user-management h2 {
+  margin: 0;
+  color: #17252f;
+  font-size: 1.1rem;
+}
+
+.user-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.user-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid #d9e2df;
+  padding-top: 1rem;
+}
+
+.user-row span {
+  display: block;
+  margin-top: 0.25rem;
+  color: #52616b;
+  font-size: 0.9rem;
+}
+
+.temporary-delivery {
+  margin-top: 1rem;
 }
 
 .shell-actions {

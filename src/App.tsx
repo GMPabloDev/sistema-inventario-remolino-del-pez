@@ -1,15 +1,22 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import {
+  type AdminUser,
   type AppError,
   changePassword,
+  createUser,
   getAppStatus,
   getAuthStartup,
   isAppError,
+  listUsers,
   login,
   logout,
-  type UserIdentity,
+  resetUserPassword,
   retryDatabase,
+  setUserActive,
+  type UserIdentity,
+  type UserRole,
+  updateUser,
 } from "./lib/database";
 import "./App.css";
 
@@ -38,6 +45,12 @@ function App() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showUsers, setShowUsers] = useState(false);
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [userUsername, setUserUsername] = useState("");
+  const [userDisplayName, setUserDisplayName] = useState("");
+  const [userRole, setUserRole] = useState<UserRole>("WAREHOUSE_MANAGER");
 
   const applyAuthResult = useCallback(
     (result: { identity: UserIdentity; persistenceWarning: boolean }) => {
@@ -135,12 +148,112 @@ function App() {
       await logout();
       setIdentity(null);
       setPassword("");
+      setShowUsers(false);
       setViewState("login");
     } catch (logoutError: unknown) {
       setError(asAppError(logoutError));
     } finally {
       setBusy(false);
     }
+  }, []);
+
+  const handleOpenUsers = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      setUsers(await listUsers());
+      setShowUsers(true);
+    } catch (usersError: unknown) {
+      setError(asAppError(usersError));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const handleCreateUser = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      setBusy(true);
+      setError(null);
+      try {
+        const result = await createUser(userUsername, userDisplayName, userRole);
+        setUsers((current) =>
+          [...current, result.user].sort((left, right) =>
+            left.username.localeCompare(right.username),
+          ),
+        );
+        setTemporaryPassword(result.temporaryPassword);
+        setUserUsername("");
+        setUserDisplayName("");
+      } catch (usersError: unknown) {
+        setError(asAppError(usersError));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [userDisplayName, userRole, userUsername],
+  );
+
+  const handleUpdateUser = useCallback(
+    async (event: FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      if (!editingUser) return;
+      setBusy(true);
+      setError(null);
+      try {
+        const result = await updateUser(editingUser.id, userUsername, userDisplayName, userRole);
+        setUsers((current) =>
+          current.map((user) => (user.id === result.user.id ? result.user : user)),
+        );
+        setEditingUser(null);
+      } catch (usersError: unknown) {
+        setError(asAppError(usersError));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [editingUser, userDisplayName, userRole, userUsername],
+  );
+
+  const handleToggleUser = useCallback(async (user: AdminUser) => {
+    if (!window.confirm(`${user.active ? "¿Desactivar" : "¿Activar"} a ${user.username}?`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await setUserActive(user.id, !user.active);
+      setUsers((current) =>
+        current.map((item) => (item.id === result.user.id ? result.user : item)),
+      );
+    } catch (usersError: unknown) {
+      setError(asAppError(usersError));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const handleResetUser = useCallback(async (user: AdminUser) => {
+    if (!window.confirm(`¿Restablecer la contraseña de ${user.username}?`)) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await resetUserPassword(user.id);
+      setUsers((current) =>
+        current.map((item) => (item.id === result.user.id ? result.user : item)),
+      );
+      setTemporaryPassword(result.temporaryPassword);
+    } catch (usersError: unknown) {
+      setError(asAppError(usersError));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const beginEditing = useCallback((user: AdminUser) => {
+    setEditingUser(user);
+    setUserUsername(user.username);
+    setUserDisplayName(user.displayName);
+    setUserRole(user.role);
+    setError(null);
   }, []);
 
   useEffect(() => {
@@ -310,6 +423,129 @@ function App() {
     );
   }
 
+  if (showUsers && identity?.role === "ADMIN") {
+    return (
+      <main className="app-shell">
+        <section className="status-card user-management" aria-labelledby="users-title">
+          <p className="eyebrow">Administración</p>
+          <h1 id="users-title">Usuarios</h1>
+          {error && (
+            <p className="form-error" role="alert">
+              {error.message}
+            </p>
+          )}
+          {temporaryPassword && (
+            <div className="temporary-delivery" role="status">
+              <p>Contraseña temporal. Entrégala ahora; no volverá a mostrarse.</p>
+              <output className="temporary-password" aria-label="Contraseña temporal">
+                {temporaryPassword}
+              </output>
+              <button type="button" onClick={() => setTemporaryPassword(null)}>
+                Ocultar contraseña
+              </button>
+            </div>
+          )}
+          <form
+            className="auth-form"
+            onSubmit={(event) =>
+              void (editingUser ? handleUpdateUser(event) : handleCreateUser(event))
+            }
+          >
+            <h2>{editingUser ? "Editar usuario" : "Crear usuario"}</h2>
+            <label>
+              Nombre de usuario
+              <input
+                value={userUsername}
+                onChange={(event) => setUserUsername(event.target.value)}
+                minLength={3}
+                maxLength={32}
+                required
+                disabled={busy}
+              />
+            </label>
+            <label>
+              Nombre visible
+              <input
+                value={userDisplayName}
+                onChange={(event) => setUserDisplayName(event.target.value)}
+                maxLength={100}
+                required
+                disabled={busy}
+              />
+            </label>
+            <label>
+              Rol
+              <select
+                value={userRole}
+                onChange={(event) => setUserRole(event.target.value as UserRole)}
+                disabled={busy}
+              >
+                <option value="ADMIN">ADMIN</option>
+                <option value="WAREHOUSE_MANAGER">WAREHOUSE_MANAGER</option>
+              </select>
+            </label>
+            <div className="shell-actions">
+              <button type="submit" disabled={busy}>
+                {editingUser ? "Guardar cambios" : "Crear usuario"}
+              </button>
+              {editingUser && (
+                <button type="button" onClick={() => setEditingUser(null)} disabled={busy}>
+                  Cancelar
+                </button>
+              )}
+            </div>
+          </form>
+          <div className="user-list" aria-live="polite">
+            {users.length === 0 ? (
+              <p>No hay usuarios configurados.</p>
+            ) : (
+              users.map((user) => (
+                <article className="user-row" key={user.id}>
+                  <div>
+                    <strong>{user.username}</strong>
+                    <span>
+                      {user.displayName} · {user.role} · {user.active ? "Activa" : "Inactiva"}
+                    </span>
+                  </div>
+                  <div className="shell-actions">
+                    <button type="button" onClick={() => beginEditing(user)} disabled={busy}>
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleToggleUser(user)}
+                      disabled={busy}
+                    >
+                      {user.active ? "Desactivar" : "Activar"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleResetUser(user)}
+                      disabled={busy}
+                    >
+                      Restablecer contraseña
+                    </button>
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setShowUsers(false);
+              setEditingUser(null);
+              setTemporaryPassword(null);
+            }}
+            disabled={busy}
+          >
+            Volver
+          </button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="app-shell">
       <section className="status-card" aria-labelledby="ready-title">
@@ -332,6 +568,11 @@ function App() {
           </p>
         )}
         <div className="shell-actions">
+          {identity?.role === "ADMIN" && (
+            <button type="button" onClick={() => void handleOpenUsers()} disabled={busy}>
+              Gestionar usuarios
+            </button>
+          )}
           <button
             type="button"
             onClick={() => {

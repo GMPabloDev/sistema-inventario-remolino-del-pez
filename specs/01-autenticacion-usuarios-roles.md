@@ -269,12 +269,12 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 
 ### Bloque 3 — Autorización y administración de usuarios
 
-- [ ] Crear un mecanismo común para exigir sesión, cambio de contraseña completado y rol en comandos Tauri.
-- [ ] Clasificar los comandos públicos existentes y retirar o proteger comandos técnicos o de demostración innecesarios.
-- [ ] Implementar listado, creación y actualización de usuarios para `ADMIN`.
-- [ ] Implementar activación, desactivación y restablecimiento mediante contraseñas temporales de entrega única.
-- [ ] Revocar sesiones afectadas dentro de las mismas operaciones que cambian contraseña, rol o estado.
-- [ ] Probar cada operación con `ADMIN`, `WAREHOUSE_MANAGER`, sesión temporal, sesión revocada y ausencia de sesión.
+- [x] Crear un mecanismo común para exigir sesión, cambio de contraseña completado y rol en comandos Tauri.
+- [x] Clasificar los comandos públicos existentes y retirar o proteger comandos técnicos o de demostración innecesarios.
+- [x] Implementar listado, creación y actualización de usuarios para `ADMIN`.
+- [x] Implementar activación, desactivación y restablecimiento mediante contraseñas temporales de entrega única.
+- [x] Revocar sesiones afectadas dentro de las mismas operaciones que cambian contraseña, rol o estado.
+- [x] Probar cada operación con `ADMIN`, `WAREHOUSE_MANAGER`, sesión temporal, sesión revocada y ausencia de sesión.
 
 **Resultado verificable:** invocar directamente un comando administrativo sin un `ADMIN` vigente siempre falla y los cambios de seguridad tienen efecto antes de confirmar la operación.
 
