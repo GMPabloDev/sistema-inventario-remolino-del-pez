@@ -4,7 +4,19 @@ export type AppErrorCode =
   | "APP_DATA_DIR_UNAVAILABLE"
   | "DATABASE_UNAVAILABLE"
   | "DATABASE_MIGRATION_FAILED"
-  | "INTERNAL_ERROR";
+  | "INTERNAL_ERROR"
+  | "AUTH_INVALID_CREDENTIALS"
+  | "AUTH_SESSION_REQUIRED"
+  | "AUTH_SESSION_EXPIRED"
+  | "AUTH_FORBIDDEN"
+  | "AUTH_PASSWORD_CHANGE_REQUIRED"
+  | "AUTH_PERSISTENCE_UNAVAILABLE"
+  | "PASSWORD_VALIDATION_FAILED"
+  | "USERNAME_ALREADY_EXISTS"
+  | "USER_VALIDATION_FAILED"
+  | "USER_NOT_FOUND"
+  | "LAST_ACTIVE_ADMIN_REQUIRED"
+  | "SELF_MANAGEMENT_NOT_ALLOWED";
 
 export interface AppError {
   code: AppErrorCode;
@@ -17,6 +29,43 @@ export interface AppStatus {
   version: string;
 }
 
+export type UserRole = "ADMIN" | "WAREHOUSE_MANAGER";
+
+export interface UserIdentity {
+  id: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  mustChangePassword: boolean;
+}
+
+export interface AuthStartup {
+  state: "bootstrap" | "login" | "authenticated";
+  identity: UserIdentity | null;
+  temporaryPassword: string | null;
+  persistenceWarning: boolean;
+}
+
+export interface AuthResult {
+  identity: UserIdentity;
+  persistenceWarning: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  username: string;
+  displayName: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AdminMutationResult {
+  user: AdminUser;
+  temporaryPassword: string | null;
+}
+
 export function isAppError(value: unknown): value is AppError {
   if (!value || typeof value !== "object") {
     return false;
@@ -26,9 +75,9 @@ export function isAppError(value: unknown): value is AppError {
   return typeof candidate.code === "string" && typeof candidate.message === "string";
 }
 
-async function invokeApp<T>(command: string): Promise<T> {
+async function invokeApp<T>(command: string, args?: Record<string, unknown>): Promise<T> {
   try {
-    return await invoke<T>(command);
+    return await invoke<T>(command, args);
   } catch (error: unknown) {
     if (isAppError(error)) {
       throw error;
@@ -49,6 +98,62 @@ export function retryDatabase(): Promise<AppStatus> {
   return invokeApp<AppStatus>("retry_database");
 }
 
-export function testDatabaseConnection(): Promise<void> {
-  return invokeApp<void>("test_database_connection");
+export function getAuthStartup(): Promise<AuthStartup> {
+  return invokeApp<AuthStartup>("get_auth_startup");
+}
+
+export function login(username: string, password: string): Promise<AuthResult> {
+  return invokeApp<AuthResult>("login", { request: { username, password } });
+}
+
+export function changePassword(
+  currentPassword: string | undefined,
+  newPassword: string,
+): Promise<AuthResult> {
+  return invokeApp<AuthResult>("change_password", {
+    request: { currentPassword, newPassword },
+  });
+}
+
+export function logout(): Promise<void> {
+  return invokeApp<void>("logout");
+}
+
+export function getIdentity(): Promise<UserIdentity> {
+  return invokeApp<UserIdentity>("get_identity");
+}
+
+export function listUsers(): Promise<AdminUser[]> {
+  return invokeApp<AdminUser[]>("list_users");
+}
+
+export function createUser(
+  username: string,
+  displayName: string,
+  role: UserRole,
+): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("create_user", {
+    request: { username, displayName, role },
+  });
+}
+
+export function updateUser(
+  id: string,
+  username: string,
+  displayName: string,
+  role: UserRole,
+): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("update_user", {
+    request: { id, username, displayName, role },
+  });
+}
+
+export function setUserActive(id: string, active: boolean): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("set_user_active", {
+    request: { id, active },
+  });
+}
+
+export function resetUserPassword(id: string): Promise<AdminMutationResult> {
+  return invokeApp<AdminMutationResult>("reset_user_password", { request: { id } });
 }

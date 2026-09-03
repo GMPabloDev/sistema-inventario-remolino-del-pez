@@ -1,3 +1,5 @@
+pub mod auth;
+mod auth_service;
 mod database;
 mod errors;
 mod logging;
@@ -5,17 +7,19 @@ mod migration;
 
 use std::{path::PathBuf, sync::Mutex};
 
+use auth_service::{AdminMutationResult, AdminUser, AuthResult, AuthService, AuthStartup};
 use database::initialize_database;
 use errors::AppError;
 use logging::Logger;
 use sea_orm::DatabaseConnection;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tauri::{Manager, State};
 
 const APP_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub struct AppState {
     pub database: Mutex<Option<DatabaseConnection>>,
+    pub auth: AuthService,
     database_path: Mutex<Option<PathBuf>>,
     initialization_error: Mutex<Option<AppError>>,
     logger: Mutex<Option<Logger>>,
@@ -41,6 +45,7 @@ impl AppState {
     fn new() -> Self {
         Self {
             database: Mutex::new(None),
+            auth: AuthService::new(),
             database_path: Mutex::new(None),
             initialization_error: Mutex::new(None),
             logger: Mutex::new(None),
@@ -131,6 +136,22 @@ async fn retry_database_initialization(state: &AppState) -> Result<AppStatus, Ap
     }
 }
 
+fn database_connection(state: &AppState) -> Result<DatabaseConnection, AppError> {
+    state
+        .database
+        .lock()
+        .map_err(|_| internal_error("database state lock is poisoned"))?
+        .as_ref()
+        .cloned()
+        .ok_or_else(|| {
+            AppError::new(
+                "DATABASE_UNAVAILABLE",
+                "La base de datos no está disponible.",
+                "database is not initialized",
+            )
+        })
+}
+
 fn current_status(state: &AppState) -> Result<AppStatus, AppError> {
     let database = state
         .database
@@ -156,12 +177,150 @@ fn current_status(state: &AppState) -> Result<AppStatus, AppError> {
     ))
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct LoginRequest {
+    username: String,
+    password: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ChangePasswordRequest {
+    current_password: Option<String>,
+    new_password: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateUserRequest {
+    username: String,
+    display_name: String,
+    role: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateUserRequest {
+    id: String,
+    username: String,
+    display_name: String,
+    role: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UserStatusRequest {
+    id: String,
+    active: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ResetPasswordRequest {
+    id: String,
+}
+
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!(
-        "Hello, {}! You've been greeted from the Rust backend!",
-        name
-    )
+async fn get_auth_startup(state: State<'_, AppState>) -> Result<AuthStartup, AppError> {
+    let database = database_connection(&state)?;
+    state.auth.startup(&database).await
+}
+
+#[tauri::command]
+async fn login(request: LoginRequest, state: State<'_, AppState>) -> Result<AuthResult, AppError> {
+    let database = database_connection(&state)?;
+    state
+        .auth
+        .login(&database, &request.username, &request.password)
+        .await
+}
+
+#[tauri::command]
+async fn change_password(
+    request: ChangePasswordRequest,
+    state: State<'_, AppState>,
+) -> Result<AuthResult, AppError> {
+    let database = database_connection(&state)?;
+    state
+        .auth
+        .change_password(
+            &database,
+            request.current_password.as_deref(),
+            &request.new_password,
+        )
+        .await
+}
+
+#[tauri::command]
+async fn logout(state: State<'_, AppState>) -> Result<(), AppError> {
+    let database = database_connection(&state)?;
+    state.auth.logout(&database).await
+}
+
+#[tauri::command]
+async fn get_identity(state: State<'_, AppState>) -> Result<crate::auth::UserIdentity, AppError> {
+    let database = database_connection(&state)?;
+    state.auth.restore_identity(&database).await
+}
+
+#[tauri::command]
+async fn list_users(state: State<'_, AppState>) -> Result<Vec<AdminUser>, AppError> {
+    let database = database_connection(&state)?;
+    state.auth.list_users(&database).await
+}
+
+#[tauri::command]
+async fn create_user(
+    request: CreateUserRequest,
+    state: State<'_, AppState>,
+) -> Result<AdminMutationResult, AppError> {
+    let database = database_connection(&state)?;
+    let role = crate::auth::UserRole::parse(&request.role)?;
+    state
+        .auth
+        .create_user(&database, &request.username, &request.display_name, role)
+        .await
+}
+
+#[tauri::command]
+async fn update_user(
+    request: UpdateUserRequest,
+    state: State<'_, AppState>,
+) -> Result<AdminMutationResult, AppError> {
+    let database = database_connection(&state)?;
+    let role = crate::auth::UserRole::parse(&request.role)?;
+    state
+        .auth
+        .update_user(
+            &database,
+            &request.id,
+            &request.username,
+            &request.display_name,
+            role,
+        )
+        .await
+}
+
+#[tauri::command]
+async fn set_user_active(
+    request: UserStatusRequest,
+    state: State<'_, AppState>,
+) -> Result<AdminMutationResult, AppError> {
+    let database = database_connection(&state)?;
+    state
+        .auth
+        .set_user_active(&database, &request.id, request.active)
+        .await
+}
+
+#[tauri::command]
+async fn reset_user_password(
+    request: ResetPasswordRequest,
+    state: State<'_, AppState>,
+) -> Result<AdminMutationResult, AppError> {
+    let database = database_connection(&state)?;
+    state.auth.reset_password(&database, &request.id).await
 }
 
 #[tauri::command]
@@ -172,31 +331,6 @@ fn get_app_status(state: State<'_, AppState>) -> Result<AppStatus, AppError> {
 #[tauri::command]
 async fn retry_database(state: State<'_, AppState>) -> Result<AppStatus, AppError> {
     retry_database_initialization(&state).await
-}
-
-#[tauri::command]
-async fn test_database_connection(state: State<'_, AppState>) -> Result<(), AppError> {
-    let database = {
-        let state_database = state
-            .database
-            .lock()
-            .map_err(|_| internal_error("database state lock is poisoned"))?;
-        state_database.as_ref().cloned().ok_or_else(|| {
-            AppError::new(
-                "DATABASE_UNAVAILABLE",
-                "La base de datos no está disponible.",
-                "database is not initialized",
-            )
-        })?
-    };
-
-    database.ping().await.map_err(|error| {
-        AppError::new(
-            "DATABASE_UNAVAILABLE",
-            "La base de datos no está disponible.",
-            error.to_string(),
-        )
-    })
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -238,10 +372,18 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-            greet,
             get_app_status,
-            retry_database,
-            test_database_connection
+            get_auth_startup,
+            login,
+            change_password,
+            logout,
+            get_identity,
+            list_users,
+            create_user,
+            update_user,
+            set_user_active,
+            reset_user_password,
+            retry_database
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

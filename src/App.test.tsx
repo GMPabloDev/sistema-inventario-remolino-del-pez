@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AppError } from "./lib/database";
-import { getAppStatus, retryDatabase } from "./lib/database";
+import { getAppStatus, getAuthStartup, listUsers, login, retryDatabase } from "./lib/database";
 import App from "./App";
 
 vi.mock("./lib/database", () => ({
@@ -13,10 +13,16 @@ vi.mock("./lib/database", () => ({
     typeof (value as { code?: unknown }).code === "string" &&
     typeof (value as { message?: unknown }).message === "string",
   retryDatabase: vi.fn(),
+  getAuthStartup: vi.fn(),
+  listUsers: vi.fn(),
+  login: vi.fn(),
 }));
 
 const mockedGetAppStatus = vi.mocked(getAppStatus);
 const mockedRetryDatabase = vi.mocked(retryDatabase);
+const mockedGetAuthStartup = vi.mocked(getAuthStartup);
+const mockedListUsers = vi.mocked(listUsers);
+const mockedLogin = vi.mocked(login);
 
 const databaseError: AppError = {
   code: "DATABASE_UNAVAILABLE",
@@ -25,6 +31,12 @@ const databaseError: AppError = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedGetAuthStartup.mockResolvedValue({
+    state: "login",
+    identity: null,
+    temporaryPassword: null,
+    persistenceWarning: false,
+  });
 });
 
 afterEach(() => {
@@ -46,13 +58,22 @@ describe("App shell", () => {
 
     resolveStatus({ state: "ready", version: "0.1.0" });
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Aplicación lista" })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeTruthy();
     });
   });
 
   it("muestra un error seguro y permite reintentar", async () => {
-    mockedGetAppStatus.mockRejectedValue(databaseError);
+    mockedGetAppStatus.mockRejectedValueOnce(databaseError).mockResolvedValue({
+      state: "ready",
+      version: "0.1.0",
+    });
     mockedRetryDatabase.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "login",
+      identity: null,
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
 
     render(<App />);
 
@@ -63,12 +84,137 @@ describe("App shell", () => {
 
     await waitFor(() => {
       expect(mockedRetryDatabase).toHaveBeenCalledOnce();
-      expect(screen.getByRole("heading", { name: "Aplicación lista" })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeTruthy();
     });
+  });
+
+  it("oculta la administración para WAREHOUSE_MANAGER", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "authenticated",
+      identity: {
+        id: "manager-id",
+        username: "manager",
+        displayName: "Encargado",
+        role: "WAREHOUSE_MANAGER",
+        mustChangePassword: false,
+      },
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Sesión activa" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Gestionar usuarios" })).toBeNull();
+  });
+
+  it("permite a ADMIN abrir la gestión de usuarios", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "authenticated",
+      identity: {
+        id: "admin-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: false,
+      },
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
+    mockedListUsers.mockResolvedValue([]);
+
+    render(<App />);
+    fireEvent.click(await screen.findByRole("button", { name: "Gestionar usuarios" }));
+
+    expect(await screen.findByRole("heading", { name: "Usuarios" })).toBeTruthy();
+    expect(mockedListUsers).toHaveBeenCalledOnce();
+    expect(screen.getByText("No hay usuarios configurados.")).toBeTruthy();
+  });
+
+  it("muestra una contraseña temporal una sola vez durante el bootstrap", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "bootstrap",
+      identity: {
+        id: "admin-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: true,
+      },
+      temporaryPassword: "temporal-segura-123456",
+      persistenceWarning: false,
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Administrador inicial creado" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Contraseña temporal").textContent).toContain(
+      "temporal-segura-123456",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al inicio de sesión" }));
+    expect(screen.queryByLabelText("Contraseña temporal")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeTruthy();
+  });
+
+  it("dirige una sesión temporal al cambio obligatorio", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "authenticated",
+      identity: {
+        id: "admin-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: true,
+      },
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Cambia tu contraseña" })).toBeTruthy();
+  });
+
+  it("mantiene el mensaje genérico y limpia la contraseña tras un login fallido", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedLogin.mockRejectedValue({
+      code: "AUTH_INVALID_CREDENTIALS",
+      message: "Las credenciales no son válidas.",
+    });
+
+    render(<App />);
+    const usernameInput = await screen.findByLabelText("Nombre de usuario");
+    const passwordInput = screen.getByLabelText("Contraseña") as HTMLInputElement;
+    fireEvent.change(usernameInput, { target: { value: "admin" } });
+    fireEvent.change(passwordInput, { target: { value: "secreto incorrecto" } });
+    fireEvent.submit(passwordInput.closest("form") as HTMLFormElement);
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Las credenciales no son válidas.",
+    );
+    expect(passwordInput.value).toBe("");
   });
 
   it("muestra la versión cuando el backend está listo", async () => {
     mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "authenticated",
+      identity: {
+        id: "user-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: false,
+      },
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
 
     render(<App />);
 
