@@ -18,9 +18,10 @@ impl MigrationTrait for Migration {
                     role TEXT NOT NULL CHECK (role IN ('ADMIN', 'WAREHOUSE_MANAGER')),
                     active INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
                     must_change_password INTEGER NOT NULL DEFAULT 1 CHECK (must_change_password IN (0, 1)),
+                    bootstrap_pending INTEGER NOT NULL DEFAULT 0 CHECK (bootstrap_pending IN (0, 1)),
                     password_changed_at TEXT NULL,
-                    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                    updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+                    created_at INTEGER NOT NULL DEFAULT (CAST(strftime('%s', 'now') AS INTEGER) * 1000),
+                    updated_at INTEGER NOT NULL DEFAULT (CAST(strftime('%s', 'now') AS INTEGER) * 1000)
                 );
 
                 CREATE INDEX idx_users_role_active ON users (role, active);
@@ -30,7 +31,7 @@ impl MigrationTrait for Migration {
                 FOR EACH ROW
                 BEGIN
                     UPDATE users
-                    SET updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                    SET updated_at = CAST(strftime('%s', 'now') AS INTEGER) * 1000
                     WHERE id = OLD.id;
                 END;
 
@@ -38,9 +39,9 @@ impl MigrationTrait for Migration {
                     id TEXT PRIMARY KEY NOT NULL,
                     user_id TEXT NOT NULL,
                     token_hash TEXT NOT NULL UNIQUE,
-                    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-                    expires_at TEXT NOT NULL,
-                    revoked_at TEXT NULL,
+                    created_at INTEGER NOT NULL DEFAULT (CAST(strftime('%s', 'now') AS INTEGER) * 1000),
+                    expires_at INTEGER NOT NULL,
+                    revoked_at INTEGER NULL,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT
                 );
 

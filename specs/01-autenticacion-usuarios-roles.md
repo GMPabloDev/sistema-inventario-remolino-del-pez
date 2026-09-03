@@ -258,12 +258,12 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 
 ### Bloque 2 — Bootstrap, autenticación y sesión
 
-- [ ] Implementar el bootstrap idempotente de `admin` y la entrega controlada de su contraseña temporal.
-- [ ] Implementar login con error genérico, espera progresiva y cambio obligatorio de contraseña.
-- [ ] Implementar creación, restauración, expiración y revocación de la sesión recordada durante siete días.
-- [ ] Integrar el secreto persistente con el almacén seguro de credenciales de Windows y el fallback no persistente.
-- [ ] Implementar consulta de identidad, cambio de contraseña propia y logout.
-- [ ] Probar reinicios, expiración, revocación, usuario inactivo, credenciales erróneas y pérdida del almacén seguro.
+- [x] Implementar el bootstrap idempotente de `admin` y la entrega controlada de su contraseña temporal.
+- [x] Implementar login con error genérico, espera progresiva y cambio obligatorio de contraseña.
+- [x] Implementar creación, restauración, expiración y revocación de la sesión recordada durante siete días.
+- [x] Integrar el secreto persistente con el almacén seguro de credenciales de Windows y el fallback no persistente.
+- [x] Implementar consulta de identidad, cambio de contraseña propia y logout.
+- [x] Probar reinicios, expiración, revocación, usuario inactivo, credenciales erróneas y pérdida del almacén seguro.
 
 **Resultado verificable:** el primer administrador establece una contraseña definitiva, una sesión válida se restaura tras reiniciar y cualquier sesión vencida o revocada vuelve al login sin exponer secretos.
 

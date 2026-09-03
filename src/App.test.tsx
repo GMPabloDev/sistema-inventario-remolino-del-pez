@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AppError } from "./lib/database";
-import { getAppStatus, retryDatabase } from "./lib/database";
+import { getAppStatus, getAuthStartup, retryDatabase } from "./lib/database";
 import App from "./App";
 
 vi.mock("./lib/database", () => ({
@@ -13,10 +13,12 @@ vi.mock("./lib/database", () => ({
     typeof (value as { code?: unknown }).code === "string" &&
     typeof (value as { message?: unknown }).message === "string",
   retryDatabase: vi.fn(),
+  getAuthStartup: vi.fn(),
 }));
 
 const mockedGetAppStatus = vi.mocked(getAppStatus);
 const mockedRetryDatabase = vi.mocked(retryDatabase);
+const mockedGetAuthStartup = vi.mocked(getAuthStartup);
 
 const databaseError: AppError = {
   code: "DATABASE_UNAVAILABLE",
@@ -25,6 +27,12 @@ const databaseError: AppError = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedGetAuthStartup.mockResolvedValue({
+    state: "login",
+    identity: null,
+    temporaryPassword: null,
+    persistenceWarning: false,
+  });
 });
 
 afterEach(() => {
@@ -46,13 +54,22 @@ describe("App shell", () => {
 
     resolveStatus({ state: "ready", version: "0.1.0" });
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Aplicación lista" })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeTruthy();
     });
   });
 
   it("muestra un error seguro y permite reintentar", async () => {
-    mockedGetAppStatus.mockRejectedValue(databaseError);
+    mockedGetAppStatus.mockRejectedValueOnce(databaseError).mockResolvedValue({
+      state: "ready",
+      version: "0.1.0",
+    });
     mockedRetryDatabase.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "login",
+      identity: null,
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
 
     render(<App />);
 
@@ -63,12 +80,24 @@ describe("App shell", () => {
 
     await waitFor(() => {
       expect(mockedRetryDatabase).toHaveBeenCalledOnce();
-      expect(screen.getByRole("heading", { name: "Aplicación lista" })).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeTruthy();
     });
   });
 
   it("muestra la versión cuando el backend está listo", async () => {
     mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "authenticated",
+      identity: {
+        id: "user-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: false,
+      },
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
 
     render(<App />);
 

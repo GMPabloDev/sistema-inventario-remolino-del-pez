@@ -79,6 +79,10 @@ impl SessionSecret {
     pub fn expose_to_secure_store(&self) -> &str {
         &self.0
     }
+
+    pub(crate) fn from_string(value: String) -> Self {
+        Self(value)
+    }
 }
 
 pub fn new_uuid() -> String {
