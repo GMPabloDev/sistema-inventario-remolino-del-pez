@@ -280,12 +280,12 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 
 ### Bloque 4 — Flujo React
 
-- [ ] Extender el cliente tipado de comandos y códigos de error sin exponer secretos persistentes.
-- [ ] Orquestar los estados de preparación, bootstrap, restauración, login, cambio obligatorio y shell autenticado.
-- [ ] Crear formularios accesibles de login, cambio de contraseña y gestión de usuarios con validación visible.
-- [ ] Mostrar contraseñas temporales únicamente en la respuesta inmediata de bootstrap, creación o restablecimiento.
-- [ ] Adaptar navegación y acciones visibles al rol, manteniendo la autorización real en Rust.
-- [ ] Cubrir estados de carga, error, expiración, permisos y acciones con pruebas de componentes.
+- [x] Extender el cliente tipado de comandos y códigos de error sin exponer secretos persistentes.
+- [x] Orquestar los estados de preparación, bootstrap, restauración, login, cambio obligatorio y shell autenticado.
+- [x] Crear formularios accesibles de login, cambio de contraseña y gestión de usuarios con validación visible.
+- [x] Mostrar contraseñas temporales únicamente en la respuesta inmediata de bootstrap, creación o restablecimiento.
+- [x] Adaptar navegación y acciones visibles al rol, manteniendo la autorización real en Rust.
+- [x] Cubrir estados de carga, error, expiración, permisos y acciones con pruebas de componentes.
 
 **Resultado verificable:** cada usuario atraviesa el flujo correspondiente a su estado y rol mediante teclado, y ninguna recarga o reapertura vuelve a mostrar una credencial temporal ya entregada.
 

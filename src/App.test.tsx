@@ -131,6 +131,54 @@ describe("App shell", () => {
     expect(screen.getByText("No hay usuarios configurados.")).toBeTruthy();
   });
 
+  it("muestra una contraseña temporal una sola vez durante el bootstrap", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "bootstrap",
+      identity: {
+        id: "admin-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: true,
+      },
+      temporaryPassword: "temporal-segura-123456",
+      persistenceWarning: false,
+    });
+
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Administrador inicial creado" }),
+    ).toBeTruthy();
+    expect(screen.getByLabelText("Contraseña temporal").textContent).toContain(
+      "temporal-segura-123456",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Continuar al inicio de sesión" }));
+    expect(screen.queryByLabelText("Contraseña temporal")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeTruthy();
+  });
+
+  it("dirige una sesión temporal al cambio obligatorio", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedGetAuthStartup.mockResolvedValue({
+      state: "authenticated",
+      identity: {
+        id: "admin-id",
+        username: "admin",
+        displayName: "Administrador",
+        role: "ADMIN",
+        mustChangePassword: true,
+      },
+      temporaryPassword: null,
+      persistenceWarning: false,
+    });
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Cambia tu contraseña" })).toBeTruthy();
+  });
+
   it("muestra la versión cuando el backend está listo", async () => {
     mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
     mockedGetAuthStartup.mockResolvedValue({

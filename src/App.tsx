@@ -20,7 +20,8 @@ import {
 } from "./lib/database";
 import "./App.css";
 
-type ViewState = "loading" | "bootstrap" | "login" | "password-change" | "shell" | "error";
+type ViewState =
+  "loading" | "authenticating" | "bootstrap" | "login" | "password-change" | "shell" | "error";
 
 function asAppError(error: unknown): AppError {
   if (isAppError(error)) {
@@ -45,6 +46,7 @@ function App() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [usersLoading, setUsersLoading] = useState(false);
   const [showUsers, setShowUsers] = useState(false);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
@@ -68,6 +70,7 @@ function App() {
     try {
       const status = await getAppStatus();
       setVersion(status.version);
+      setViewState("authenticating");
       const startup = await getAuthStartup();
       setPersistenceWarning(startup.persistenceWarning);
       setIdentity(startup.identity);
@@ -159,6 +162,7 @@ function App() {
 
   const handleOpenUsers = useCallback(async () => {
     setBusy(true);
+    setUsersLoading(true);
     setError(null);
     try {
       setUsers(await listUsers());
@@ -166,6 +170,7 @@ function App() {
     } catch (usersError: unknown) {
       setError(asAppError(usersError));
     } finally {
+      setUsersLoading(false);
       setBusy(false);
     }
   }, []);
@@ -270,6 +275,21 @@ function App() {
           <p className="eyebrow">Inventario Remolino del Pez</p>
           <h1 id="loading-title">Preparando la aplicación</h1>
           <p>Estamos preparando el almacenamiento local. Espera un momento.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (viewState === "authenticating") {
+    return (
+      <main className="app-shell" aria-busy="true" aria-live="polite">
+        <section className="status-card" aria-labelledby="authenticating-title">
+          <span className="status-mark status-mark--loading" aria-hidden="true">
+            …
+          </span>
+          <p className="eyebrow">Inventario Remolino del Pez</p>
+          <h1 id="authenticating-title">Comprobando la sesión</h1>
+          <p>Estamos verificando el acceso local. Espera un momento.</p>
         </section>
       </main>
     );
@@ -496,7 +516,9 @@ function App() {
             </div>
           </form>
           <div className="user-list" aria-live="polite">
-            {users.length === 0 ? (
+            {usersLoading ? (
+              <p role="status">Cargando usuarios…</p>
+            ) : users.length === 0 ? (
               <p>No hay usuarios configurados.</p>
             ) : (
               users.map((user) => (
