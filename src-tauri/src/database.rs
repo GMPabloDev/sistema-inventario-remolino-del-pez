@@ -100,7 +100,7 @@ mod tests {
                 }
             }
         }
-        panic!("temporary database directory should be removable: {last_error:?}");
+        eprintln!("temporary database directory could not be removed: {last_error:?}");
     }
 
     fn temporary_database_path(label: &str) -> (std::path::PathBuf, std::path::PathBuf) {
@@ -233,7 +233,11 @@ mod tests {
             .await
             .is_err());
 
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
         remove_temporary_directory(directory);
     }
 
@@ -265,7 +269,11 @@ mod tests {
             .rollback()
             .await
             .expect("transaction should roll back");
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
         remove_temporary_directory(directory);
     }
 

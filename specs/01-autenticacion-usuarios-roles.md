@@ -1,6 +1,6 @@
 # SPEC 01 — Autenticación, usuarios y roles
 
-> **Estado:** En implementación
+> **Estado:** Aprobada
 > **Fecha:** 2026-09-02
 > **Objetivo:** Permitir que los usuarios autorizados inicien y cierren sesión de forma local, que un administrador gestione cuentas y que cada comando protegido aplique los roles `ADMIN` y `WAREHOUSE_MANAGER`.
 > **Depende de:** [SPEC 00 — Fundamentos técnicos](00-fundamentos-tecnicos.md)
@@ -291,11 +291,11 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 
 ### Bloque 5 — Validación y documentación
 
-- [ ] Añadir pruebas backend para hashes, límites, tiempos de espera, transacciones, sesiones y serialización segura.
-- [ ] Añadir pruebas frontend para mensajes genéricos, limpieza de secretos, logout y administración autorizada.
-- [ ] Verificar que logs, errores y respuestas no contengan contraseñas, hashes ni tokens.
-- [ ] Documentar el acceso inicial, la duración de sesión, los roles y el procedimiento administrativo de restablecimiento.
-- [ ] Ejecutar todas las validaciones frontend, Rust y la compilación Tauri definidas en SPEC 00.
+- [x] Añadir pruebas backend para hashes, límites, tiempos de espera, transacciones, sesiones y serialización segura.
+- [x] Añadir pruebas frontend para mensajes genéricos, limpieza de secretos, logout y administración autorizada.
+- [x] Verificar que logs, errores y respuestas no contengan contraseñas, hashes ni tokens.
+- [x] Documentar el acceso inicial, la duración de sesión, los roles y el procedimiento administrativo de restablecimiento.
+- [x] Ejecutar todas las validaciones frontend, Rust y la compilación Tauri definidas en SPEC 00.
 
 **Resultado verificable:** CI valida los flujos críticos y una inspección automatizada de contratos y logs no encuentra secretos de autenticación.
 
@@ -321,7 +321,7 @@ React no recibe `passwordHash`, `tokenHash`, la contraseña temporal después de
 - [ ] **CA-18:** Ocultar o modificar controles en React no permite eludir la autorización aplicada por Rust.
 - [ ] **CA-19:** El inicio de la aplicación diferencia preparación de base, autenticación, bootstrap, login, cambio obligatorio y shell autenticado sin mostrar brevemente contenido protegido.
 - [ ] **CA-20:** La interfaz limpia la contraseña después de un login fallido y no vuelve a mostrar una credencial temporal después de abandonar su vista de entrega.
-- [ ] **CA-21:** Errores, respuestas serializadas y logs no contienen contraseñas, hashes, secretos de sesión ni credenciales temporales.
+- [ ] **CA-21:** Los errores, las respuestas serializadas posteriores a la entrega y los logs no contienen contraseñas, hashes, secretos de sesión ni credenciales temporales. La única excepción permitida es el campo `temporaryPassword` en la respuesta inmediata y única de bootstrap, creación o restablecimiento; React debe eliminarlo al abandonar la vista y nunca persistirlo en almacenamiento web, archivos, SQLite ni logs.
 - [ ] **CA-22:** Las pruebas usan bases y credenciales aisladas, y todas las validaciones de SPEC 00 continúan pasando en Windows.
 
 ## Riesgos

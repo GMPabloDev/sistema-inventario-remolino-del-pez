@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AppError } from "./lib/database";
-import { getAppStatus, getAuthStartup, listUsers, retryDatabase } from "./lib/database";
+import { getAppStatus, getAuthStartup, listUsers, login, retryDatabase } from "./lib/database";
 import App from "./App";
 
 vi.mock("./lib/database", () => ({
@@ -15,12 +15,14 @@ vi.mock("./lib/database", () => ({
   retryDatabase: vi.fn(),
   getAuthStartup: vi.fn(),
   listUsers: vi.fn(),
+  login: vi.fn(),
 }));
 
 const mockedGetAppStatus = vi.mocked(getAppStatus);
 const mockedRetryDatabase = vi.mocked(retryDatabase);
 const mockedGetAuthStartup = vi.mocked(getAuthStartup);
 const mockedListUsers = vi.mocked(listUsers);
+const mockedLogin = vi.mocked(login);
 
 const databaseError: AppError = {
   code: "DATABASE_UNAVAILABLE",
@@ -177,6 +179,26 @@ describe("App shell", () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: "Cambia tu contraseña" })).toBeTruthy();
+  });
+
+  it("mantiene el mensaje genérico y limpia la contraseña tras un login fallido", async () => {
+    mockedGetAppStatus.mockResolvedValue({ state: "ready", version: "0.1.0" });
+    mockedLogin.mockRejectedValue({
+      code: "AUTH_INVALID_CREDENTIALS",
+      message: "Las credenciales no son válidas.",
+    });
+
+    render(<App />);
+    const usernameInput = await screen.findByLabelText("Nombre de usuario");
+    const passwordInput = screen.getByLabelText("Contraseña") as HTMLInputElement;
+    fireEvent.change(usernameInput, { target: { value: "admin" } });
+    fireEvent.change(passwordInput, { target: { value: "secreto incorrecto" } });
+    fireEvent.submit(passwordInput.closest("form") as HTMLFormElement);
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "Las credenciales no son válidas.",
+    );
+    expect(passwordInput.value).toBe("");
   });
 
   it("muestra la versión cuando el backend está listo", async () => {

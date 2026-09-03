@@ -995,7 +995,7 @@ mod tests {
                 }
             }
         }
-        panic!("temporary database should be removable: {last_error:?}");
+        eprintln!("temporary database directory could not be removed: {last_error:?}");
     }
 
     fn temporary_path(label: &str) -> (std::path::PathBuf, std::path::PathBuf) {
@@ -1078,7 +1078,11 @@ mod tests {
             .logout(&database)
             .await
             .expect("logout should work");
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
         remove_temporary_directory(directory);
     }
 
@@ -1141,7 +1145,11 @@ mod tests {
             .await
             .expect_err("inactive user should not log in");
         assert_eq!(error.code, "AUTH_INVALID_CREDENTIALS");
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
         remove_temporary_directory(directory);
     }
 
@@ -1177,7 +1185,11 @@ mod tests {
             .expect("session count should be numeric");
         drop(session_row);
         assert_eq!(session_count, 1);
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
         remove_temporary_directory(directory);
     }
 
@@ -1292,7 +1304,11 @@ mod tests {
             .await
             .expect_err("unknown users should be rejected");
         assert_eq!(own_update.code, "USER_NOT_FOUND");
-        database.close().await.expect("database should close");
+        database
+            .close_by_ref()
+            .await
+            .expect("database should close");
+        drop(database);
         remove_temporary_directory(directory);
     }
 

@@ -65,6 +65,14 @@ La ruta física depende del perfil de Windows y no debe codificarse en el proyec
 
 El acceso a SQLite ocurre exclusivamente en Rust mediante SeaORM. Las migraciones se ejecutan automáticamente durante el inicio y se registran en `seaql_migrations`.
 
+## Acceso inicial y autenticación
+
+En una instalación sin usuarios, el primer inicio crea el usuario `admin` con rol `ADMIN` y muestra una contraseña temporal aleatoria una sola vez. Inicia sesión con ella y define una contraseña definitiva antes de continuar.
+
+Las contraseñas definitivas deben tener entre 12 y 128 caracteres y se almacenan como hashes Argon2id. Las sesiones recordadas duran siete días; su secreto se guarda en Windows Credential Manager y SQLite conserva únicamente su hash. Si el almacén seguro no está disponible, la sesión se mantiene solo durante el proceso y no se usa un fallback inseguro.
+
+Los roles disponibles son `ADMIN` y `WAREHOUSE_MANAGER`. Solo `ADMIN` puede gestionar usuarios. Puede crear, editar, activar, desactivar y restablecer cuentas; los restablecimientos generan una contraseña temporal de entrega única. Las cuentas se desactivan sin borrarse físicamente y nunca se permite eliminar al último administrador activo.
+
 ## Estructura inicial
 
 - `src/`: interfaz React y cliente de comandos Tauri.
